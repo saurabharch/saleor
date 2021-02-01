@@ -237,7 +237,7 @@ def test_permission_denied_query_graphql_errors_are_logged_in_another_logger(
     response = api_client.post_graphql(
         """
         mutation {
-          productImageDelete(id: "aa") {
+          productMediaDelete(id: "aa") {
             errors {
               message
             }
@@ -258,7 +258,7 @@ def test_validation_errors_query_do_not_get_logged(
     response = staff_api_client.post_graphql(
         """
         mutation {
-          productImageDelete(id: "aa") {
+          productMediaDelete(id: "aa") {
             errors {
               message
             }
