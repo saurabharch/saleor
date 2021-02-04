@@ -11,7 +11,7 @@ from ....account.utils import requestor_is_staff_member_or_app
 from ....attribute import models as attribute_models
 from ....core.permissions import OrderPermissions, ProductPermissions
 from ....core.weight import convert_weight_to_default_weight_unit
-from ....product import models, ProductMediaTypes
+from ....product import ProductMediaTypes, models
 from ....product.templatetags.product_images import (
     get_product_image_thumbnail,
     get_thumbnail,
@@ -1066,7 +1066,7 @@ class Category(CountableDjangoObjectType):
 class ProductMedia(CountableDjangoObjectType):
     url = graphene.String(
         required=True,
-        description="The URL of the image.",
+        description="The URL of the media.",
         size=graphene.Int(description="Size of the image."),
     )
 
