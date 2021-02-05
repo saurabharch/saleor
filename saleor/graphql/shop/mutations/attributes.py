@@ -37,29 +37,25 @@ class CategorySettingsInput(graphene.InputObjectType):
     )
 
 
-class CategorySettingsUpdate(BaseMutation):
-    category_settings = graphene.Field(
-        CategorySettings, description="Updated category settings."
-    )
-
-    class Arguments:
-        input = CategorySettingsInput(
-            required=True, description="Fields required to update category settings."
-        )
-
+class BaseAttributeSettingsUpdateMutation(BaseMutation):
     class Meta:
-        description = "Updates category settings."
-        permissions = (SitePermissions.MANAGE_SETTINGS,)
-        error_type_class = ShopError
-        error_type_field = "shop_errors"
+        abstract = True
+
+    @classmethod
+    def success_response(cls):
+        pass
+
+    @staticmethod
+    def get_attribute_model_and_lookup():
+        pass
 
     @classmethod
     def perform_mutation(cls, _root, info, **data):
         site_settings = info.context.site.settings
         input = data["input"]
         cleaned_input = cls.clean_input(site_settings, input)
-        cls.update_category_settings(site_settings, cleaned_input)
-        return cls(category_settings=CategorySettings())
+        cls.update_settings(site_settings, cleaned_input)
+        return cls.success_response()
 
     @classmethod
     def clean_input(cls, site_settings: "SiteSettings", input_data: dict):
@@ -102,18 +98,18 @@ class CategorySettingsUpdate(BaseMutation):
                 }
             )
 
-    @staticmethod
-    def clean_add_attributes(attr_ids: List[int], site_settings: "SiteSettings"):
+    @classmethod
+    def clean_add_attributes(cls, attr_ids: List[int], site_settings: "SiteSettings"):
         # drop attributes that are already assigned
         attr_ids = {int(id) for id in attr_ids}
-        assigned_attr_ids = attribute_models.AttributeCategory.objects.filter(
+        attribute_model, _ = cls.get_attribute_model_and_lookup()
+        assigned_attr_ids = attribute_model.objects.filter(
             site_settings=site_settings, attribute_id__in=attr_ids
         ).values_list("attribute_id", flat=True)
         return set(attr_ids) - set(assigned_attr_ids)
 
     @staticmethod
     def validate_attribute_types(attributes: List[attribute_models.Attribute]):
-        # only page attributes can be set as category attributes
         invalid_attrs = [
             attr for attr in attributes if attr.type != AttributeType.PAGE_TYPE
         ]
@@ -125,27 +121,51 @@ class CategorySettingsUpdate(BaseMutation):
             raise ValidationError(
                 {
                     "input": ValidationError(
-                        "Only Page attributes can be set as category attributes.",
+                        "Only attributes of page type can be set.",
                         code=ShopErrorCode.INVALID.value,
                         params={"attributes": attr_ids},
                     )
                 }
             )
 
-    @staticmethod
-    def update_category_settings(site_settings: "SiteSettings", cleaned_input: dict):
+    @classmethod
+    def update_settings(cls, site_settings: "SiteSettings", cleaned_input: dict):
+        attribute_model, attribute_lookup = cls.get_attribute_model_and_lookup()
         remove_attr = cleaned_input.get("remove_attributes")
         add_attr = cleaned_input.get("add_attributes")
         if remove_attr:
-            site_settings.category_attributes.filter(
+            getattr(site_settings, attribute_lookup).filter(
                 attribute_id__in=remove_attr
             ).delete()
         if add_attr:
-            attribute_models.AttributeCategory.objects.bulk_create(
+            attribute_model.objects.bulk_create(
                 [
-                    attribute_models.AttributeCategory(
-                        site_settings=site_settings, attribute=attr
-                    )
+                    attribute_model(site_settings=site_settings, attribute=attr)
                     for attr in add_attr
                 ]
             )
+
+
+class CategorySettingsUpdate(BaseAttributeSettingsUpdateMutation):
+    category_settings = graphene.Field(
+        CategorySettings, description="Updated category settings."
+    )
+
+    class Arguments:
+        input = CategorySettingsInput(
+            required=True, description="Fields required to update category settings."
+        )
+
+    class Meta:
+        description = "Updates category settings."
+        permissions = (SitePermissions.MANAGE_SETTINGS,)
+        error_type_class = ShopError
+        error_type_field = "shop_errors"
+
+    @classmethod
+    def success_response(cls):
+        return cls(category_settings=CategorySettings())
+
+    @staticmethod
+    def get_attribute_model_and_lookup():
+        return attribute_models.AttributeCategory, "category_attributes"
