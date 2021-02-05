@@ -73,6 +73,8 @@ class Migration(migrations.Migration):
                         choices=[
                             ("image", "An uploaded image"),
                             ("video/youtube", "A URL to a YouTube video"),
+                            ("video/streamable", "A URL to a Streamable video"),
+                            ("video/vimeo", "A URL to a Vimeo video"),
                             ("video/unknown", "A URL to a unknown video provider"),
                         ],
                         default="image",

@@ -37,12 +37,12 @@ from ...core.scalars import WeightScalar
 from ...core.types import SeoInput, Upload
 from ...core.types.common import CollectionError, ProductError
 from ...core.utils import (
-    check_video_url,
     clean_seo_fields,
     from_global_id_strict_type,
     get_duplicated_values,
     validate_image_file,
     validate_slug_and_generate_if_needed,
+    validate_video_url,
 )
 from ...core.utils.reordering import perform_reordering
 from ...warehouse.types import Warehouse
@@ -1223,7 +1223,7 @@ class ProductMediaCreate(BaseMutation):
             )
             create_product_thumbnails.delay(media.pk)
         elif video_url:
-            video_url, video_type = check_video_url(video_url, "video_url")
+            video_url, video_type = validate_video_url(video_url, "video_url")
             media = product.media.create(video_url=video_url, alt=alt, type=video_type)
 
         product = ChannelContext(node=product, channel_slug=None)

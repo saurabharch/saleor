@@ -5952,7 +5952,7 @@ def test_product_media_create_mutation_with_youtube_url(
 
     media = content["data"]["productMediaCreate"]["product"]["media"]
     assert len(media) == 1
-    assert media[0]["url"] == "https://www.youtube.com/watch?v=SomeVideoID"
+    assert media[0]["url"] == "https://www.youtube.com/embed/SomeVideoID"
     assert media[0]["alt"] == "Test Alt Text"
     assert media[0]["type"] == "VIDEO_YOUTUBE"
 
